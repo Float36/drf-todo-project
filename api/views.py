@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework import viewsets
-from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated
+from rest_framework import filters
 
 from .models import Todo
 from .serializers import TodoSerializer
@@ -11,6 +11,16 @@ from .permissions import IsOwnerOrReadOnly
 class TodoViewSet(viewsets.ModelViewSet):
     serializer_class = TodoSerializer
     queryset = Todo.objects.all()
+
+    # Дозволяє фільтрувати за полем 'is_completed'
+    filterset_fields = ['is_completed']
+
+    # Дозволяє повнотекстовий пошук за полями 'title' та 'description'
+    search_fields = ['title', 'description']
+
+    # Дозволяє сортування за полем 'created_at' (та іншими, якщо додати)
+    ordering_fields = ['created_at']
+
 
     def get_queryset(self):
         """
