@@ -1,5 +1,6 @@
 from django.shortcuts import render
-from rest_framework import generics
+from rest_framework import viewsets
+from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated
 
 from .models import Todo
@@ -7,32 +8,33 @@ from .serializers import TodoSerializer
 from .permissions import IsOwnerOrReadOnly
 
 
-class TodoListCreateView(generics.ListCreateAPIView):
-    """
-    GET for all tasks, POST for new task
-    """
-    permission_classes = [IsAuthenticated]
+class TodoViewSet(viewsets.ModelViewSet):
     serializer_class = TodoSerializer
+    queryset = Todo.objects.all()
 
     def get_queryset(self):
         """
-        Return list of tasks for authenticated user
+        Return tasks only for current user
+        :return:
         """
-        user = self.request.user
-        return Todo.objects.filter(owner=user)
+        return self.queryset.filter(owner=self.request.user)
 
     def perform_create(self, serializer):
+        """
+        Призначає поточного користувача власником таски при створенні нового завдання.
+        :param serializer:
+        :return:
+        """
         serializer.save(owner=self.request.user)
 
-class TodoDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """
-    GET PUT PATCH DELETE by id
-    """
-    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+    def get_permissions(self):
+        """
+        Призначає різні дозволи для різних дій
+        :return:
+        """
+        if self.action == 'list' or self.action == 'create':
+            permission_classes = [IsAuthenticated]
+        else:
+            permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
-
-    queryset = Todo.objects.all()
-    serializer_class = TodoSerializer
-
-
-
+        return [permission() for permission in permission_classes]
